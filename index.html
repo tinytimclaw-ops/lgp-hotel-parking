@@ -86,14 +86,14 @@
     /* Horizontal Form Layout */
     .hx-search-forms {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 15px;
       align-items: end;
     }
 
     @media (min-width: 992px) {
       .hx-search-forms {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
       }
     }
 
@@ -112,6 +112,12 @@
       color: #484e52;
       margin-bottom: 8px;
       line-height: 25px;
+    }
+
+    .hx-search-forms_label-optional {
+      font-size: 14px;
+      color: #767d7d;
+      font-weight: 300;
     }
 
     .hx-search-forms_text-input,
@@ -185,52 +191,57 @@
       cursor: not-allowed;
     }
 
-    /* Flight Lookup Section */
-    .flight-lookup {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #dfe3e5;
+    .hx-search-forms_button-secondary {
+      background: #fff;
+      color: #0c79a1;
+      border-color: #0c79a1;
+      font-weight: 400;
     }
 
-    .flight-lookup-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #484e52;
-      margin-bottom: 15px;
+    .hx-search-forms_button-secondary:hover {
+      background: #e6e6e6;
+      border-color: #0c79a1;
     }
 
-    .flight-input-group {
-      display: flex;
-      gap: 10px;
-      align-items: end;
-    }
-
-    .flight-input-group .form-group {
-      flex: 1;
-    }
-
+    /* Flight Results Dropdown */
     .flight-results {
-      margin-top: 15px;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      background: #fff;
+      border: 1px solid #deddde;
+      border-radius: 3px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
       display: none;
+    }
+
+    .flight-results.show {
+      display: block;
     }
 
     .flight-result-item {
       padding: 12px;
-      background: #f5f5f5;
-      border-radius: 3px;
-      margin-bottom: 8px;
       cursor: pointer;
       transition: background-color 0.2s;
-      border: 2px solid transparent;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .flight-result-item:last-child {
+      border-bottom: none;
     }
 
     .flight-result-item:hover {
-      background: #e6e6e6;
+      background: #f5f5f5;
     }
 
     .flight-result-item.selected {
-      border-color: #c74c28;
       background: #fff5f2;
+      border-left: 3px solid #c74c28;
     }
 
     .flight-result-header {
@@ -243,7 +254,7 @@
     .flight-code {
       font-weight: 700;
       color: #c74c28;
-      font-size: 18px;
+      font-size: 16px;
     }
 
     .flight-times {
@@ -253,7 +264,18 @@
 
     .flight-route {
       color: #767d7d;
+      font-size: 13px;
+    }
+
+    .flight-loading {
+      padding: 12px;
+      text-align: center;
+      color: #767d7d;
       font-size: 14px;
+    }
+
+    .form-group-flight {
+      position: relative;
     }
 
     /* USP Section */
@@ -323,10 +345,6 @@
       .hx-search-forms {
         grid-template-columns: 1fr;
         gap: 12px;
-      }
-
-      .flight-input-group {
-        flex-direction: column;
       }
 
       .search-card-title {
@@ -406,38 +424,24 @@
           </select>
         </div>
 
+        <div class="form-group form-group-flight">
+          <label class="hx-search-forms_label" for="flightCode">
+            Flight <span class="hx-search-forms_label-optional">(optional)</span>
+          </label>
+          <input
+            type="text"
+            id="flightCode"
+            class="hx-search-forms_text-input"
+            placeholder="e.g. BA123"
+            autocomplete="off"
+          >
+          <div id="flightResults" class="flight-results"></div>
+        </div>
+
         <div class="form-group">
           <button type="submit" class="hx-search-forms_button">Search Now</button>
         </div>
       </form>
-
-      <!-- Optional Flight Lookup -->
-      <div class="flight-lookup">
-        <div class="flight-lookup-title">Optional: Find your flight</div>
-        <div class="flight-input-group">
-          <div class="form-group">
-            <label class="hx-search-forms_label" for="flightCode">Flight Number</label>
-            <input
-              type="text"
-              id="flightCode"
-              class="hx-search-forms_text-input"
-              placeholder="e.g. BA123"
-            >
-          </div>
-          <div class="form-group">
-            <label class="hx-search-forms_label" for="flightDate">Flight Date</label>
-            <input
-              type="date"
-              id="flightDate"
-              class="hx-search-forms_text-input"
-            >
-          </div>
-          <div class="form-group">
-            <button type="button" id="lookupFlight" class="hx-search-forms_button">Lookup Flight</button>
-          </div>
-        </div>
-        <div id="flightResults" class="flight-results"></div>
-      </div>
     </div>
 
     <!-- USP Section -->
@@ -499,7 +503,7 @@
     const departCode = (urlParams.get("Location") || urlParams.get("location") || "").toUpperCase();
     const airportName = AIRPORT_NAMES[departCode] || DEFAULT_AIRPORT;
     const agent = urlParams.get("agent") || "WY992";
-    const flight = urlParams.get("flight") || "default";
+    const flightParam = urlParams.get("flight") || "default";
     const adcode = urlParams.get("adcode") || "";
     const promotionCode = urlParams.get("promotionCode") || "";
 
@@ -528,7 +532,6 @@
     document.getElementById("stayDate").value = defaultStayDate;
     document.getElementById("outDate").value = defaultOutDate;
     document.getElementById("inDate").value = defaultInDate;
-    document.getElementById("flightDate").value = defaultOutDate;
 
     // Track if user manually changed inDate
     let inDateManuallyChanged = false;
@@ -549,6 +552,103 @@
       }
     });
 
+    // Flight lookup functionality
+    let flightLookupTimeout;
+    let selectedFlightCode = "";
+    const flightInput = document.getElementById("flightCode");
+    const flightResults = document.getElementById("flightResults");
+
+    flightInput.addEventListener("input", function() {
+      const query = this.value.trim();
+
+      clearTimeout(flightLookupTimeout);
+
+      if (query.length < 2) {
+        flightResults.classList.remove("show");
+        return;
+      }
+
+      flightLookupTimeout = setTimeout(async function() {
+        const flightDate = document.getElementById("outDate").value;
+
+        flightResults.innerHTML = '<div class="flight-loading">Searching flights...</div>';
+        flightResults.classList.add("show");
+
+        try {
+          const response = await fetch(`https://api.holidayextras.com/v1/flight?flight=${query}&departDate=${flightDate}&location=${departCode || ''}`);
+          const flights = await response.json();
+
+          if (!flights || flights.length === 0) {
+            flightResults.innerHTML = '<div class="flight-loading">No flights found</div>';
+            return;
+          }
+
+          let html = '';
+          flights.forEach(f => {
+            const code = (f.flight && f.flight.code) || "";
+            const airline = (f.flight && f.flight.carrier && f.flight.carrier.name) || "";
+            const depTime = (f.departure && f.departure.time) || "";
+            const arrTime = (f.arrival && f.arrival.time) || "";
+            const depIata = (f.departure && f.departure.airport_iata) || "";
+            const arrIata = (f.arrival && f.arrival.airport_iata) || "";
+            const depAirport = (f.departure && f.departure.airport) || depIata;
+            const arrAirport = (f.arrival && f.arrival.airport) || arrIata;
+
+            html += `
+              <div class="flight-result-item" data-code="${code}" data-time="${depTime}" data-date="${flightDate}">
+                <div class="flight-result-header">
+                  <div class="flight-code">${code}</div>
+                  <div class="flight-times">${depTime} → ${arrTime}</div>
+                </div>
+                <div class="flight-route">${airline ? airline + ' • ' : ''}${depAirport} → ${arrAirport}</div>
+              </div>
+            `;
+          });
+
+          flightResults.innerHTML = html;
+
+          // Add click handlers
+          document.querySelectorAll(".flight-result-item").forEach(item => {
+            item.addEventListener("click", function() {
+              const code = this.getAttribute("data-code");
+              const date = this.getAttribute("data-date");
+
+              selectedFlightCode = code;
+              flightInput.value = code;
+              flightResults.classList.remove("show");
+
+              // Update parking start date to flight date
+              document.getElementById("outDate").value = date;
+
+              // Adjust stay date if needed
+              const stayDateInput = document.getElementById("stayDate");
+              const currentStayDate = new Date(stayDateInput.value);
+              const flightDateObj = new Date(date);
+
+              if (currentStayDate >= flightDateObj) {
+                stayDateInput.value = dateStrPlus(date, -1);
+              }
+
+              // Recalculate inDate if not manually changed
+              if (!inDateManuallyChanged) {
+                document.getElementById("inDate").value = dateStrPlus(date, 8);
+              }
+            });
+          });
+        } catch (error) {
+          flightResults.innerHTML = '<div class="flight-loading">Error searching flights</div>';
+          console.error(error);
+        }
+      }, 500);
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", function(e) {
+      if (!flightInput.contains(e.target) && !flightResults.contains(e.target)) {
+        flightResults.classList.remove("show");
+      }
+    });
+
     // Form submission
     document.getElementById("searchForm").addEventListener("submit", function(e) {
       e.preventDefault();
@@ -557,94 +657,13 @@
       const outDate = document.getElementById("outDate").value;
       const inDate = document.getElementById("inDate").value;
       const roomType = document.getElementById("roomType").value;
+      const flightCode = selectedFlightCode || flightParam;
 
-      // Determine base domain
-      const basedomain = window.location.host.startsWith("127")
-        ? "www.holidayextras.com"
-        : window.location.host.replace("www", "app");
-
-      // Build search URL
-      const searchUrl = `https://${basedomain}/static/?selectProduct=hcp#/hotel_with_parking?agent=${agent}&ppts=0&customer_ref=&lang=en&depart=${departCode || 'LGW'}&terminal=&arrive=&flight=${flight}&in=${inDate}&out=${outDate}&stay=${stayDate}&room_1=${roomType}&room_2=&adcode=${adcode}&promotionCode=${promotionCode}`;
+      // Build search URL - always use holidayextras.com domain
+      const searchUrl = `https://www.holidayextras.com/static/?selectProduct=hcp#/hotel_with_parking?agent=${agent}&ppts=0&customer_ref=&lang=en&depart=${departCode || 'LGW'}&terminal=&arrive=&flight=${flightCode}&in=${inDate}&out=${outDate}&stay=${stayDate}&room_1=${roomType}&room_2=&adcode=${adcode}&promotionCode=${promotionCode}`;
 
       window.location.href = searchUrl;
     });
-
-    // Flight lookup functionality
-    document.getElementById("lookupFlight").addEventListener("click", async function() {
-      const flightCode = document.getElementById("flightCode").value.trim();
-      const flightDate = document.getElementById("flightDate").value;
-
-      if (!flightCode || !flightDate) {
-        alert("Please enter both flight number and date");
-        return;
-      }
-
-      const resultsDiv = document.getElementById("flightResults");
-      resultsDiv.innerHTML = '<div style="padding: 12px; color: #767d7d;">Searching...</div>';
-      resultsDiv.style.display = "block";
-
-      try {
-        const response = await fetch(`https://api.holidayextras.com/v1/flight?flight=${flightCode}&departDate=${flightDate}&location=${departCode || ''}`);
-        const flights = await response.json();
-
-        if (!flights || flights.length === 0) {
-          resultsDiv.innerHTML = '<div style="padding: 12px; color: #767d7d;">No flights found. Try a different code or date.</div>';
-          return;
-        }
-
-        let html = '';
-        flights.forEach(f => {
-          const code = (f.flight && f.flight.code) || "";
-          const airline = (f.flight && f.flight.carrier && f.flight.carrier.name) || "";
-          const depTime = (f.departure && f.departure.time) || "";
-          const arrTime = (f.arrival && f.arrival.time) || "";
-          const depIata = (f.departure && f.departure.airport_iata) || "";
-          const arrIata = (f.arrival && f.arrival.airport_iata) || "";
-          const depAirport = (f.departure && f.departure.airport) || depIata;
-          const arrAirport = (f.arrival && f.arrival.airport) || arrIata;
-
-          html += `
-            <div class="flight-result-item" onclick="selectFlight('${code}', '${depTime}', '${arrTime}', '${flightDate}')">
-              <div class="flight-result-header">
-                <div class="flight-code">${code}</div>
-                <div class="flight-times">${depTime} → ${arrTime}</div>
-              </div>
-              <div class="flight-route">${airline ? airline + ' • ' : ''}${depAirport} → ${arrAirport}</div>
-            </div>
-          `;
-        });
-
-        resultsDiv.innerHTML = html;
-      } catch (error) {
-        resultsDiv.innerHTML = '<div style="padding: 12px; color: #bc140f;">Error looking up flight. Please try again.</div>';
-        console.error(error);
-      }
-    });
-
-    // Select flight and populate dates
-    window.selectFlight = function(code, depTime, arrTime, date) {
-      // Highlight selected flight
-      document.querySelectorAll(".flight-result-item").forEach(el => el.classList.remove("selected"));
-      event.currentTarget.classList.add("selected");
-
-      // Set parking start date to flight date
-      document.getElementById("outDate").value = date;
-      document.getElementById("flightDate").value = date;
-
-      // If stay date is after flight date, adjust it to day before
-      const stayDateInput = document.getElementById("stayDate");
-      const currentStayDate = new Date(stayDateInput.value);
-      const flightDateObj = new Date(date);
-
-      if (currentStayDate >= flightDateObj) {
-        stayDateInput.value = dateStrPlus(date, -1);
-      }
-
-      // Recalculate inDate if not manually changed
-      if (!inDateManuallyChanged) {
-        document.getElementById("inDate").value = dateStrPlus(date, 8);
-      }
-    };
   </script>
 </body>
 </html>
